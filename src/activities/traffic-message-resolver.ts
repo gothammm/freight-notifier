@@ -1,6 +1,8 @@
 import { ApplicationFailure } from '@temporalio/client';
 import { getOpenAIClient } from '../openai-client';
 import { TrafficDelayResolution } from './traffic-delay-resolver';
+import { log } from '@temporalio/activity';
+import { type OpenAI } from 'openai';
 
 export interface TrafficMessage {
   subject: string;
@@ -9,6 +11,17 @@ export interface TrafficMessage {
 
 export async function generateTrafficMessage(delayResolution: TrafficDelayResolution): Promise<TrafficMessage> {
   const { delay_minutes, details } = delayResolution;
+
+  let openai: OpenAI;
+  try {
+    openai = getOpenAIClient();
+  } catch (error) {
+    log.error('Failed to initialize OpenAI client', { error });
+    throw ApplicationFailure.create({
+      message: `Failed to initialize OpenAI client: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      nonRetryable: true,
+    });
+  }
 
   const prompt = `
   Generate a friendly customer notification about a traffic delay for a delivery.
@@ -29,8 +42,6 @@ export async function generateTrafficMessage(delayResolution: TrafficDelayResolu
 
 --- OTHER INSTRUCTIONS ---
 Keep it professional but empathetic.`;
-
-  const openai = getOpenAIClient();
 
   const response = await openai.chat.completions.create({
     model: 'gpt-4o-mini',
