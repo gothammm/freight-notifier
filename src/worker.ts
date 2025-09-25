@@ -1,5 +1,11 @@
 import { NativeConnection, Worker } from '@temporalio/worker';
 import * as activities from './activities';
+import { config } from 'dotenv';
+
+// Load environment variables from .env file if present
+config({
+  path: ['.env.local', '.env'], // Load .env.local first, then .env
+});
 
 async function run() {
   // Step 1: Establish a connection with Temporal server.
@@ -15,13 +21,13 @@ async function run() {
     const worker = await Worker.create({
       connection,
       namespace: 'default',
-      taskQueue: 'hello-world',
+      taskQueue: 'freight-notifier',
       // Workflows are registered using a path as they run in a separate JS context.
       workflowsPath: require.resolve('./workflows'),
       activities,
     });
 
-    // Step 3: Start accepting tasks on the `hello-world` queue
+    // Step 3: Start accepting tasks on the `freight-notifier` queue
     //
     // The worker runs until it encounters an unexpected error or the process receives a shutdown signal registered on
     // the SDK Runtime object.
